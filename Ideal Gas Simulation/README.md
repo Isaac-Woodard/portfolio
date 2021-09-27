@@ -11,4 +11,4 @@ Features of the program include:
 - Displaying an ideal Maxwell-Boltzmann probability distribution for the current temperature
 
 ### Usage
-Install Python and the program should execute in Windows by double-clicking the file. The program was written using Python version 3.7.
+In Windows install the latest version of Python and the program should execute by double-clicking the file. (Last tested for Python 3.8)
