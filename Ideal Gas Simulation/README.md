@@ -9,3 +9,6 @@ Features of the program include:
 - Changing the simulation speed
 - Counting the number of particles within a certain range of speeds
 - Displaying an ideal Maxwell-Boltzmann probability distribution for the current temperature
+
+### Usage
+Install Python and the program should execute in Windows by double-clicking the file. The program was written using Python version 3.7.
