@@ -1,4 +1,4 @@
-Profile Page link: https://sites.google.com/view/isaacwoodard/projects/dla-simulation
+Profile page link: https://sites.google.com/view/isaacwoodard/projects/dla-simulation
 
 ### Overview
 Diffusion-Limited Aggregation (DLA) is the growth of a cluster, such as a crystal, one particle at a time. The particles move by diffusion through the surrounding medium before making contact with the seed for the structure. The resulting cluster is fractal in nature.
