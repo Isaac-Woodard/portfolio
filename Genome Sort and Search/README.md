@@ -22,7 +22,7 @@ Other Files
  - **Query:** Text document containing DNA sequence to search for.
 
 # Usage
-First GeneBankCreateBtree.java must be run to count DNA sequence frequencies and create the B-tree file, then GeneBankSearch.java can be run to search for dna sequences specified in a query file.
+First GeneBankCreateBtree.java must be run to count DNA sequence frequencies and create the B-tree file; then GeneBankSearch.java can be run to search for dna sequences specified in a query file.
 
 ### GeneBankCreateBTree
 
