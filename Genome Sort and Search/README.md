@@ -28,6 +28,7 @@ First GeneBankCreateBtree.java must be run to count DNA sequence frequencies and
 
 Command line args: <0/1(no/with Cache)\> <degree\> <gbk file\> <sequence length\> [<cache size\>] [<debug level\>]
  - Degree should be at least 2.
+
 Creates a binary file in the working directory with the naming convention: DNAfilename.gbk.btree.data.sequencelength.degree
 
 ### GeneBankSearch
