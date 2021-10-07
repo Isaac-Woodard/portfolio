@@ -9,7 +9,7 @@ Sort
 DNAfilename.gbk.btree.data.sequencelength.degree
 
 Search
-<0/1(no/with Cache)> <btree file> <query file> [<cache size>] [<debug level>]
+<0/1(no/with Cache)\> <btree file\> <query file\> [<cache size\>] [<debug level\>]
 
 Example
 java GeneBankCreateBTree 0 2 DNAExample.gbk 5
