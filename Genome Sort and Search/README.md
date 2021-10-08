@@ -1,7 +1,7 @@
 Profile Page Link: https://sites.google.com/view/isaacwoodard/projects/genome-sort-search
 
 # Overview
-The final project of my CS 321 Data Structures course required sorting the human genome using a balanced-tree (B-tree) data structure. The goal was to then search for the frequency of particular DNA sequences in the genome. The project took place with a partner over the course of a month.
+The final project of my CS 321 Data Structures course required sorting the human genome using a balanced-tree (B-tree) data structure. The goal was to then search for the frequency of particular DNA sequences in the genome. I worked on the project over the course of a month with my partner Aaron Parish.
 
 ### Process
 The first step in  the process is creating the B-tree file with GeneBankCreateBTree.java. The steps to make the B-tree file can be summarized as:
