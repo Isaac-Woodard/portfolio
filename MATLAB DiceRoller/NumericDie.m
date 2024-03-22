@@ -1,6 +1,10 @@
 classdef NumericDie < Die
     % Represents a die with numeric sides.
 
+    properties (Dependent)
+        ExpectedValue (1,1) double {mustBePositive}
+    end
+
     methods
         function obj = NumericDie(sides, color, weight)
             arguments
@@ -10,6 +14,10 @@ classdef NumericDie < Die
             end
 
             obj@Die(sides, color, weight);
+        end
+
+        function value = get.ExpectedValue(obj)
+            value = sum(obj.Sides .* obj.Weight) / length(obj.Sides);
         end
 
         function [result, color] = roll(obj, x)
