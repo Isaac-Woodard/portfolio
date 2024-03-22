@@ -7,6 +7,8 @@ switch ("All")
         tests = TestSuite.fromFile("tests\TestCategoricDie.m");
     case "Numeric"
         tests = TestSuite.fromFile("tests\TestNumericDie.m");
+    case "probability"
+        tests = TestSuite.fromFile("tests\TestProbability.m");
 end
 
 run(tests);
