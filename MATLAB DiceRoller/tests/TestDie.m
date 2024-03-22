@@ -10,15 +10,17 @@ classdef TestDie < matlab.unittest.TestCase
     end
     
     methods(Test)
-        % Test methods.
-
         function test_add_to_history(testCase)
             result = testCase.die.roll(1);
-            testCase.verifyTrue(result == testCase.die.History);
+
+            testCase.verifyEqual(result, testCase.die.History);
         end
         
         function test_clear_history(testCase)
-            testCase.verifyFail("Unimplemented test");
+            testCase.die.roll(1);
+            testCase.die.clear_history();
+            
+            testCase.verifyEmpty(testCase.die.History);
         end
     end
 end

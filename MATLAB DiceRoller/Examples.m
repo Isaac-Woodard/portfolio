@@ -1,10 +1,12 @@
 %% Roll a d6 5 times.
 d6 = NumericDie(1:6);
 results1 = d6.roll(5);
+disp(results1)
 
 %% Roll a weather categoric die 5 times.
 weather_die = CategoricDie(["clear" "clouds" "rain" "snow"]);
 results2 = weather_die.roll(5);
+disp(results2)
 
 %% Roll five d6 once. 
 d6 = NumericDie(1:6);
@@ -14,6 +16,8 @@ results3 = zeros(5, 1);
 for i = 1:length(dice)
     results3(i) = dice(i).roll();
 end
+
+disp(results3)
 
 % Note: Less efficient than rolling the same die multiple times since 
 % NumericDie isn't vectorized.

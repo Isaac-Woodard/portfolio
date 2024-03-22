@@ -11,11 +11,9 @@ Demonstrates OOP design in MATLAB including:
 Provide an app for rolling dice for D&D...
 
 # TODO
-- Add test for randi_weight()
-- Implement test_clear_history() in TestDie
-- Implement test_roll() and tests_add_to_history() in TestCategoricDie
-- Implement PercentileDice
-- Scope AppDesigner GUI.
+- Pass the tests!
+- Implement PercentileDice?
+- Draft AppDesigner GUI.
 
 # Ideas
 - ContinuousDie: a die with an infinite number of sides which have values within a certain range. Nonphysical but might be interesting...Could also consider allowing multiple ranges, e.g. a die which can roll 1 to 5 or 10 to 15. Useful or not, weighting would be very interesting.

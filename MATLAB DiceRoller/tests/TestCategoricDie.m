@@ -1,23 +1,25 @@
 classdef TestCategoricDie < TestDie
     
-    methods(TestClassSetup)
-        % Shared setup for the entire test class
-    end
-    
     methods(TestMethodSetup)
-        % Setup for each test
+        function create_die(testCase)
+            testCase.die = CategoricDie(["a" "b" "c" "d"]);
+        end
     end
     
     methods(Test)
-        % Test methods
-        
         function test_roll(testCase)
-            testCase.verifyFail("Unimplemented test");
+            [result, color] = testCase.die.roll(1);
+
+            testCase.verifyEqual(length(result), 1);
+            testCase.verifyTrue(any(strcmp(result, testCase.die.Sides)))
+            testCase.verifyEqual(length(color), 3);
         end
 
-        function test_add_to_history(testCase)
-            %NOTE: The test wil have to be indirect since add_to_history() is private.
-            testCase.verifyFail("Unimplemented test");
+        function test_roll5(testCase)
+            [result, color] = testCase.die.roll(5);
+
+            testCase.verifyEqual(length(result), 5);
+            testCase.verifyEqual(length(result), length(color))
         end
     end
 end

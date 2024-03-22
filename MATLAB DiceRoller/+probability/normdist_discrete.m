@@ -17,4 +17,3 @@ function weights = normdist_discrete(n, range, options)
     b = -0.5 * ((x - options.mean) / options.sigma).^2;
     weights = a * exp(b);
 end
-
