@@ -25,7 +25,6 @@ classdef CategoricDie < Die
                 color (:,3) double
             end
 
-            %TODO: check if this will work for a categorical.
             indices = probability.randi_weight(x, obj.Weight);
             result = obj.Sides(indices);
             color = obj.Color(indices,:);
