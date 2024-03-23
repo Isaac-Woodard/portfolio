@@ -1,26 +1,37 @@
 classdef TestDie < matlab.unittest.TestCase
-    
+
+    properties
+        Die
+    end
+
     methods(TestClassSetup)
-        % Shared setup for the entire test class.
-        
+        function updir(testCase)
+            cd("..\");
+        end
+    end
+
+    methods(TestClassTeardown)
+        function downdir(testCase)
+            cd("tests");
+        end
     end
     
-    methods(TestMethodSetup)
-        % Setup for each test.
+    methods(TestMethodSetup, Abstract)
+        create_die(testCase)
     end
     
     methods(Test)
         function test_add_to_history(testCase)
-            result = testCase.die.roll(1);
+            result = testCase.Die.roll(1);
 
-            testCase.verifyEqual(result, testCase.die.History);
+            testCase.verifyEqual(result, testCase.Die.History);
         end
         
         function test_clear_history(testCase)
-            testCase.die.roll(1);
-            testCase.die.clear_history();
+            testCase.Die.roll(1);
+            testCase.Die.clear_history();
             
-            testCase.verifyEmpty(testCase.die.History);
+            testCase.verifyEmpty(testCase.Die.History);
         end
     end
 end

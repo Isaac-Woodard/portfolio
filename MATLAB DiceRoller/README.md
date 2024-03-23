@@ -11,7 +11,6 @@ Demonstrates OOP design in MATLAB including:
 Provide an app for rolling dice for D&D...
 
 # TODO
-- Pass the tests!
 - Implement PercentileDice?
 - Draft AppDesigner GUI.
 

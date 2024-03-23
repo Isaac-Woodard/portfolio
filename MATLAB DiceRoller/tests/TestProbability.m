@@ -1,6 +1,18 @@
 % Tests functions in the probability package.
 
 classdef TestProbability < matlab.unittest.TestCase
+
+    methods(TestClassSetup)
+        function chdir(testCase)
+            cd("..\");
+        end
+    end
+
+    methods(TestClassTeardown)
+        function downdir(testCase)
+            cd("tests");
+        end
+    end
     
     methods(Test)
         function test_normdist_discrete(testCase)
