@@ -20,12 +20,13 @@ classdef NumericDie < Die
             value = sum(obj.Sides .* obj.Weight) / length(obj.Sides);
         end
 
-        function [result, color] = roll(obj, x)
+        function [result, color] = roll(obj, x, history)
             % Rolls the die x times and returns the result(s). 
             % Calling with no arguments rolls the die once.
             arguments (Input)
                 obj
                 x (1,1) uint32 {mustBePositive} = 1
+                history (1,1) bool = true
             end
             arguments (Output)
                 result (:,1) double
@@ -35,7 +36,9 @@ classdef NumericDie < Die
             indices = probability.randi_weight(x, obj.Weight);
             result = obj.Sides(indices);
             color = obj.Color(indices,:);
-            obj.add_to_history(result);
+            if history
+                obj.add_to_history(result);
+            end
         end
 
         function [result, color] = rollmod(obj, x, mod)

@@ -13,7 +13,7 @@ classdef (Abstract) Die < handle
     end
 
     methods (Abstract)
-        [result, color] = roll(obj, x)
+        [result, color] = roll(obj, x, history)
             % Rolls the die x times and returns the result(s).
             % Calling with no arguments rolls the die once.
             %
@@ -22,6 +22,7 @@ classdef (Abstract) Die < handle
             % arguments (Input)
             %     obj
             %     x (1,1) uint32 {mustBePositive} = 1
+            %     history (1,1) bool = true
             % end
             % 
             % arguments (Output)
