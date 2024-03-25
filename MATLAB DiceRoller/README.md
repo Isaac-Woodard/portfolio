@@ -12,7 +12,7 @@ Provide an app for rolling dice for D&D...
 
 # TODO
 - Implement PercentileDice?
-- Draft AppDesigner GUI.
+- Implement AppDesigner GUI.
 
 # Ideas
 - ContinuousDie: a die with an infinite number of sides which have values within a certain range. Nonphysical but might be interesting...Could also consider allowing multiple ranges, e.g. a die which can roll 1 to 5 or 10 to 15. Useful or not, weighting would be very interesting.
