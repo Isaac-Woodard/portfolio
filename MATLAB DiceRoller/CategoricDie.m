@@ -19,7 +19,7 @@ classdef CategoricDie < Die
             arguments (Input)
                 obj
                 x (1,1) uint32 {mustBePositive} = 1
-                history (1,1) bool = true
+                history (1,1) logical = true
             end
             arguments (Output)
                 result (:,1) string
