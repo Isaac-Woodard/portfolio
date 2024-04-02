@@ -43,6 +43,8 @@ In addition to numeric dice, there are also a few special dice with text options
 - Direction: North, East, South, West
 - Mood: Happy, Sad, Angry, Excited, Anxious
 
+App Designer files are not text-readable. It is possible to avoid this issue by using MATLAB's ui objects outside of App Designer in regular MATLAB files, but the added effort is difficult to justify. 
+
 # References
 - [MATLABs core random number functions](https://www.mathworks.com/help/matlab/math/create-arrays-of-random-numbers.html)
 - [Class based unit tests](https://www.mathworks.com/help/matlab/class-based-unit-tests.html?s_tid=CRUX_lftnav)
