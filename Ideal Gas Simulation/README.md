@@ -1,4 +1,4 @@
-Profile Page Link: https://sites.google.com/view/isaacwoodard/projects/ideal-gas-simulation
+Web Page Summary: https://isaac-woodard.github.io/projects/idealgassim.html
 
 ### Overview
 The program is a Python GUI application which simulates the collisions of idealized spherical particles in a three dimensional container. The program was written for use in a student lab in PHYS 309 at Boise State University. 

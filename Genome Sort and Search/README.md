@@ -1,4 +1,4 @@
-Profile Page Link: https://sites.google.com/view/isaacwoodard/projects/genome-sort-search
+Web Page Summary: https://isaac-woodard.github.io/projects/genomesortsearch.html
 
 # Overview
 The final project of my CS 321 Data Structures course required sorting the human genome using a balanced-tree (B-tree) data structure. The goal was to then search for the frequency of particular DNA sequences in the genome. I worked on the project over the course of a month with my partner Aaron Parish.
