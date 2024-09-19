@@ -10,5 +10,18 @@ Features of the program include:
 - Counting the number of particles within a certain range of speeds
 - Displaying an ideal Maxwell-Boltzmann probability distribution for the current temperature
 
-### Usage
-In Windows install the latest version of Python and the program should execute by double-clicking the file. (Last tested for Python 3.8)
+### Dependencies
+- Python 3.10+
+- Numpy
+- matplotlib
+- PyQt6
+- Numba...
+- pyinstaller...
+
+# TODO
+Want to refactor the program:
+- Use PyQt instead of tkinter
+- Create separate classes for the gui and the simulation
+- Try to speed up execution with numba
+- Create a script to build a standalone executeable with pyinstaller
+- Add unit tests
