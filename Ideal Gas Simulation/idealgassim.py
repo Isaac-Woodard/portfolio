@@ -6,12 +6,8 @@ from numba import jit
 
 class Particle:
     def __init__(self, x:float, y:float, z:float, dx:float, dy:float, dz:float, m:int, r:int) -> None:
-        self.x = x
-        self.y = y
-        self.z = z
-        self.dx = dx
-        self.dy = dy
-        self.dz = dz
+        self.P = np.ndarray((x, y, z))
+        self.V = np.ndarray((dx, dy, dz))
         self.m = m
         self.r = r
         self.canvasID = None
@@ -19,7 +15,7 @@ class Particle:
         
     @property
     def speed(self):
-        return (self.dx**2+self.dy**2+self.dz**2)**0.5
+        return (self.V[0]**2+self.V[1]**2+self.V[2]**2)**0.5
     
     @property
     def KE(self):
@@ -38,6 +34,7 @@ class IdealGasSim():
                  nparticles:int, 
                  mass:int, 
                  radius:int,
+                 external_temp:float,
                  vmax:float=6.8,
                  m_per_pix:float=200,
                  vbin_width:float=200,
@@ -50,6 +47,7 @@ class IdealGasSim():
             nparticles (int): Starting number of particles.
             mass (int): Starting mass of particles in units of amu.
             radius (int): Starting radius of particles in pixels.
+            external_temp (float): Temperature of environment in Kelvin.
             vmax (float): Max starting velocity of particles in pixels per timestep.
             m_per_pix (float): Meters per pixel.
             vbin_width (float): Width of velocity bins used for data aggregation.
@@ -60,6 +58,7 @@ class IdealGasSim():
         self._nparticles = nparticles
         self._mass = mass
         self._radius = radius
+        self._external_temp = external_temp
         
         self._sim_depth = radius*6 # Depth in pixels of simulation.
         self._vmax = vmax
@@ -89,14 +88,14 @@ class IdealGasSim():
                 y = random.randint(1+p.r, self._sim_size-p.r)
                 z = random.randint(1+p.r, self._sim_depth-p.r)
                 for p in self.particles:
-                    if x >= p.x-2*p.r and x <= p.x+2*p.r and y >= p.y-2*p.r and y <= p.y+2*p.r and z >= p.z-2*p.r and z <= p.z+2*p.r:
+                    if x >= p.p[0]-2*p.r and x <= p.p[0]+2*p.r and y >= p.p[1]-2*p.r and y <= p.p[1]+2*p.r and z >= p.p[2]-2*p.r and z <= p.p[2]+2*p.r:
                         overlap = True
                         break
                 else:
                     overlap = False 
             p = Particle(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, m=self._mass, r=self._radius)
-            nx = int(p.x / self._grid_size)
-            ny = int(p.y / self._grid_size)
+            nx = int(p.P[0] / self._grid_size)
+            ny = int(p.P[1] / self._grid_size)
             self.partition[nx][ny].append(p)
             self.particles.append(p)
         
@@ -123,11 +122,11 @@ class IdealGasSim():
             #update each particle position and the grid
             dt = simSpeed.get() / 50 #parameter to adjust simulation speed
             for p in particleList:
-                p.x = p.x + p.dx * dt
-                p.y = p.y + p.dy * dt
-                p.z = p.z + p.dz * dt #3D Edit Marker
-                gridx = int(p.x / gridLength)
-                gridy = int(p.y / gridHeight)
+                p.p[0] = p.p[0] + p.v[0] * dt
+                p.p[1] = p.p[1] + p.v[1] * dt
+                p.p[2] = p.p[2] + p.v[2] * dt #3D Edit Marker
+                gridx = int(p.p[0] / gridLength)
+                gridy = int(p.p[1] / gridHeight)
                 grid[gridx][gridy].append(p)
             #check for collisions with wall and particles and update trajectories if necessary
             for p in particleList:
@@ -150,14 +149,14 @@ class IdealGasSim():
             high = i+binRange
             #step through particles and find speeds
             for p in particleList:
-                speed = mPerPixel * (p.dx**2 + p.dy**2 +p.dz**2)**0.5 #normalizing factor: 200 meters per pixel #3D Edit Marker
+                speed = mPerPixel * (p.v[0]**2 + p.v[1]**2 +p.v[2]**2)**0.5 #normalizing factor: 200 meters per pixel #3D Edit Marker
                 if speed >= low and speed <= high:
                     count += 1
             binCounts[binNum] = (binCounts[binNum]*binTimes+count)/(binTimes+1)
             binNum += 1
         binTimes += 1
         
-    #TODO: Refactor
+    #TODO: Return which wall the collision is with. Use info for wall_collision() call.
     def check_wall_collision(self, p:Particle) -> bool:
         """Checks the particle for wall collisions.
 
@@ -167,56 +166,50 @@ class IdealGasSim():
         Returns:
             Bool: Whether there is a wall collision.
         """
-        if p.x-p.r < 1 or p.x+p.r > simSize or p.y-p.r < 1 or p.y+p.r > simSize or p.z-p.r < 1 or p.z+p.r > simDepth: #3D Edit Marker
+        if p.P[0]-p.r < 1 or p.P[0]+p.r > self._sim_size:
+            return True
+        if p.P[1]-p.r < 1 or p.P[1]+p.r > self._sim_size:
+            return True
+        if p.P[2]-p.r < 1 or p.P[2]+p.r > self._sim_depth:
             return True
         else:
             return False
         
-    #TODO: Refactor
     def wall_collision(self, p:Particle) -> None:
         """Updates particle velocity in case of a wall collision.
 
         Args:
             p (Particle): The particle to update.
         """
-        #bounce the particle
-        if p.x-p.r < 1 or p.x+p.r > simSize: #vertical walls
-            p.dx = -p.dx
-            #make sure the particle isn't pushed behind the wall
-            if p.x-p.r < 1:
-                p.x = p.r + 1
-            if p.x+p.r > simSize:
-                p.x = simSize - 2 - p.r
-        if p.y-p.r < 1 or p.y+p.r > simSize: #horizontal walls
-            p.dy = -p.dy
-            #make sure the particle isn't pushed behind the wall
-            if p.y-p.r < 1:
-                p.y = p.r + 1
-            if p.y+p.r > simSize:
-                p.y = simSize - 2 - p.r
-        #3D Edit Marker
-        if p.z-p.r < 1 or p.z+p.r > simDepth: #depth walls
-            p.dz = -p.dz
-            #make sure the particle isn't pushed behind the wall
-            if p.z-p.r < 1:
-                p.z = p.r + 1
-            if p.z+p.r > simDepth:
-                p.z = simDepth - 2 - p.r
+        # Bounce the particle.
+        if p.P[0]-p.r < 1 or p.P[0]+p.r > self._sim_size: 
+            p.V[0] = -p.V[0]
+            # Make sure the particle isn't pushed behind the wall.
+            if p.P[0]-p.r < 1:
+                p.P[0] = p.r + 1
+            if p.P[0]+p.r > self._sim_size:
+                p.P[0] = self._sim_size - 2 - p.r
+        if p.P[1]-p.r < 1 or p.P[1]+p.r > self._sim_size:
+            p.V[1] = -p.V[1]
+            if p.P[1]-p.r < 1:
+                p.P[1] = p.r + 1
+            if p.P[1]+p.r > self._sim_size:
+                p.P[1] = self._sim_size - 2 - p.r
+        if p.P[2]-p.r < 1 or p.P[2]+p.r > self._sim_depth:
+            p.V[2] = -p.V[2]
+            if p.P[2]-p.r < 1:
+                p.P[2] = p.r + 1
+            if p.P[2]+p.r > self._sim_depth:
+                p.P[2] = self._sim_depth - 2 - p.r
             
-        #heat or cool the gas based on the target temperature
-        if temperature < targetTemp.get():  #heat the gas on collisions with the walls if the temperature is less than the target temperature
-            p.dx = p.dx + (targetTemp.get() - temperature)/1000 * p.dx
-            p.dy = p.dy + (targetTemp.get() - temperature)/1000 * p.dy
-            p.dz = p.dz + (targetTemp.get() - temperature)/1000 * p.dz #3D Edit Marker
-            
-        if temperature > targetTemp.get(): #cool the gas on collisions with the walls if the temperature is greater than the target temperature
-            p.dx = p.dx + (targetTemp.get() - temperature)/1000 * p.dx
-            p.dy = p.dy + (targetTemp.get() - temperature)/1000 * p.dy
-            p.dz = p.dz + (targetTemp.get() - temperature)/1000 * p.dz #3D Edit Marker
+        # Simulate heating or cooling the particle to meet target temperature.
+        k = 1000
+        if temperature != self._external_temp: #NOTE: Might be more efficient to skip the check.
+            p.V = p.V + (self._external_temp - temperature) / k * p.V
         
-    #TODO: Refactor
     def check_particle_collision(self, p:Particle) -> Particle:
         """Checks for particle collisions. Search is confined to neighboring partitions.
+        Does not check for collisions with multiple particles.
 
         Args:
             p (Particle): Particle to check.
@@ -224,32 +217,27 @@ class IdealGasSim():
         Returns:
             Particle: The colliding particle if found, otherwise None.
         """
-        #find grid position of p
-        gridx = int(p.x / gridLength)
-        gridy = int(p.y / gridHeight)
-        #step through grid spaces surrounding p, as well as the grid space p is in
-        for i in range(-1,2):
-            for j in range(-1,2):
-                if gridx+i < 0 or gridy+j < 0 or gridx+i >= length or gridy+j >= height: #don't check grid spaces beyond the simulation edges (because they don't exist)
+        gridx = int(p.P[0] / self._grid_size)
+        gridy = int(p.P[1] / self._grid_size)
+        # Step through adjacent grid spaces as well.
+        for i in (-1,0,1):
+            for j in (-1,0,1):
+                if gridx+i < 0 or gridy+j < 0 or gridx+i >= self._sim_size or gridy+j >= self._sim_size:
                     continue
-                #check molecules within the current grid space
                 for p2 in grid[gridx+i][gridy+j]:
-                #for p2 in particleList:
-                    if p == p2:
+                    if p is p2:
                         continue
-                    mindist = p.r+p2.r #minimum distance between particle centers
-                    dx = p.x-p2.x
-                    dy = p.y-p2.y
-                    dz = p.z-p2.z #3D Edit Marker
-                    if (abs(dx) > mindist or abs(dy) > mindist or abs(dz) > mindist): #3D Edit Marker
+                    dmin = p.r + p2.r
+                    D = p.P - p2.P
+                    if (abs(D[0]) > dmin or abs(D[1]) > dmin or abs(D[2]) > dmin):
                         continue
-                    dist = (dx**2+dy**2+dz**2)**0.5; #3D Edit Marker
-                    if (dist > mindist):
+                    d = (D[0]**2 + D[1]**2 + D[2]**2)**0.5
+                    if (d > dmin):
                         continue
                     return p2
         return None
         
-    #TODO: Refactor
+    #TODO: Refactor. Consider using Numpy.
     def particle_collision(self, p1:Particle, p2:Particle) -> None:
         """Update velocities of colliding particles p1 and p2.
 
@@ -257,79 +245,74 @@ class IdealGasSim():
             p1 (Particle): The first particle.
             p2 (Particle): The second particle.
         """
-        #Algorithm modified from Gas.java (C) 2001 by Paul Falstad, www.falstad.com
+        # Algorithm modified from Gas.java (C) 2001 by Paul Falstad, www.falstad.com
+        # Go to http://exploratoria.github.io/exhibits/mechanics/elastic-collisions-in-3d/ for more details on the theory
      
-        #calculate time since the collision theoretically transpired: [(x1-x2)+t(dx1-dx2)]^2 + [(y1-y2)+...]^2 = mindist^2
+        # Calculate time since collision: [(x1-x2)+t(dx1-dx2)]^2 + [(y1-y2)+...]^2 = dmin^2
+        pdif = p1.p - p2.p
+        vdif = p1.v - p2.v
         dxdif = p1.dx - p2.dx
         xdif  = p1.x - p2.x
         dydif = p1.dy - p2.dy
         ydif  = p1.y - p2.y
-        dzdif = p1.dz - p2.dz #3D Edit Marker
-        zdif  = p1.z - p2.z #3D Edit Marker
-        mindist = p1.r + p2.r #minimum distance
-        #a, b and c constants
-        a = dxdif**2 + dydif**2 + dzdif**2 #3D Edit Marker
-        b = 2*(xdif*dxdif + ydif*dydif + zdif*dzdif) #3D Edit Marker
-        c = xdif**2 + ydif**2 + zdif**2 - mindist**2  #3D Edit Marker
-        #roots from quadratic formula
+        dzdif = p1.dz - p2.dz
+        zdif  = p1.z - p2.z
+        dmin = p1.r + p2.r
+        # Quadratic formula...
+        a = dxdif**2 + dydif**2 + dzdif**2
+        b = 2*(xdif*dxdif + ydif*dydif + zdif*dzdif)
+        c = xdif**2 + ydif**2 + zdif**2 - dmin**2 
+        # Roots
         t = (-b - (b**2 - 4*a*c)**0.5)/(2*a)
         t2 = (-b + (b**2 - 4*a*c)**0.5)/(2*a)
         if (abs(t) > abs(t2)):
             t = t2
         
-        #move p1 to place and time of collision
-        p1.x += t*p1.dx
-        p1.y += t*p1.dy
-        p1.z += t*p1.dz #3D Edit Marker
+        # Move p1 to place and time of collision
+        p1.P += t * p1.V
 
         #find the unit vector components between the two particles' centers to treat the collision as one-dimensional
-        vx = p1.x - p2.x;
-        vy = p1.y - p2.y;
-        vz = p1.z - p2.z; #3D Edit Marker
-        vxyznorm = (vx**2+vy**2+vz**2)**0.5; #3D Edit Marker
-        vxn = vx/vxyznorm;
-        vyn = vy/vxyznorm;
-        vzn = vz/vxyznorm; #3D Edit Marker
+        vx = p1.x - p2.x
+        vy = p1.y - p2.y
+        vz = p1.z - p2.z
+        vxyznorm = (vx**2+vy**2+vz**2)**0.5
+        vxn = vx/vxyznorm
+        vyn = vy/vxyznorm
+        vzn = vz/vxyznorm
 
         #treat the particles as one particle and calculate the center of mass velocity
         totmass = p1.m + p2.m
         comdx = (p1.m*p1.dx + p2.m*p2.dx)/totmass
         comdy = (p1.m*p1.dy + p2.m*p2.dy)/totmass
-        comdz = (p1.m*p1.dz + p2.m*p2.dz)/totmass #3D Edit Marker
+        comdz = (p1.m*p1.dz + p2.m*p2.dz)/totmass
 
         #find momentum transferred to p1
-        pn = (p1.dx - comdx)*vxn + (p1.dy - comdy)*vyn + (p1.dz - comdz)*vzn #3D Edit Marker
+        pn = (p1.dx - comdx)*vxn + (p1.dy - comdy)*vyn + (p1.dz - comdz)*vzn
         px = 2*vxn*pn
         py = 2*vyn*pn
-        pz = 2*vzn*pn #3D Edit Marker
+        pz = 2*vzn*pn
 
         #transfer momentum to p1
         p1.dx -= px
         p1.dy -= py
-        p1.dz -= pz #3D Edit Marker
+        p1.dz -= pz
 
         #remove momentum from p2
         massratio = p1.m/p2.m
         p2.dx += px*massratio
         p2.dy += py*massratio
-        p2.dz += pz*massratio #3D Edit Marker
+        p2.dz += pz*massratio
         
-        #End Falstad algorithm
-        #go to http://exploratoria.github.io/exhibits/mechanics/elastic-collisions-in-3d/ for more details on the theory
-        
-    #TODO: Refactor
     def thermometer(self) -> float:
         """Calculate the temperature of the gas based on the Maxwell Boltzmann distribution.
 
         Returns:
             float: The temperature in Kelvin.
         """
-        totalKE = 0
-        for p in particleList:
-            speed = mPerPixel * p.getSpeed() #200 meters per pixel
-            totalKE += 0.5*p.m*1.66e-27*speed**2 #proton mass 1.67e-27 kg
-        aveKE = totalKE / numParticles.get() #average the kinetic energy
-        global temperature
-        temperature = aveKE / 1.38e-23 / 1.5 #find the temperature
-        #update temperature value for label
-        tempString.set(f"T = {temperature:.1f}")
+        KEtotal = 0
+        for p in self.particles:
+            speed = self._m_per_pix * p.speed # 200 meters per pixel
+            KEtotal += 0.5 * p.m * 1.66e-27 * speed**2 # proton mass 1.67e-27 kg
+        KEmean = KEtotal / len(self.particles)
+        temp = KEmean / 1.38e-23 / 1.5
+        return temp
