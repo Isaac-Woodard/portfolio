@@ -237,7 +237,6 @@ class IdealGasSim():
                     return p2
         return None
         
-    #TODO: Refactor. Consider using Numpy.
     def particle_collision(self, p1:Particle, p2:Particle) -> None:
         """Update velocities of colliding particles p1 and p2.
 
@@ -248,60 +247,41 @@ class IdealGasSim():
         # Algorithm modified from Gas.java (C) 2001 by Paul Falstad, www.falstad.com
         # Go to http://exploratoria.github.io/exhibits/mechanics/elastic-collisions-in-3d/ for more details on the theory
      
-        # Calculate time since collision: [(x1-x2)+t(dx1-dx2)]^2 + [(y1-y2)+...]^2 = dmin^2
-        pdif = p1.p - p2.p
-        vdif = p1.v - p2.v
-        dxdif = p1.dx - p2.dx
-        xdif  = p1.x - p2.x
-        dydif = p1.dy - p2.dy
-        ydif  = p1.y - p2.y
-        dzdif = p1.dz - p2.dz
-        zdif  = p1.z - p2.z
+        # Calculate time since collision with quadratic formula: 
+        # [(x1-x2)+t(dx1-dx2)]^2 + [(y1-y2)+...]^2 + [(z1-z2)+...]^2 = dmin^2
+        Pdif = p1.P - p2.P
+        Vdif = p1.V - p2.V
         dmin = p1.r + p2.r
-        # Quadratic formula...
-        a = dxdif**2 + dydif**2 + dzdif**2
-        b = 2*(xdif*dxdif + ydif*dydif + zdif*dzdif)
-        c = xdif**2 + ydif**2 + zdif**2 - dmin**2 
-        # Roots
-        t = (-b - (b**2 - 4*a*c)**0.5)/(2*a)
-        t2 = (-b + (b**2 - 4*a*c)**0.5)/(2*a)
+        a = np.sum(np.power(Vdif, 2))
+        b = 2 * np.sum(np.multiply(Pdif, Vdif))
+        c = np.sum(np.power(Pdif, 2)) - dmin**2
+        t = (-b - (b**2 - 4*a*c)**0.5) / (2*a) # Roots
+        t2 = (-b + (b**2 - 4*a*c)**0.5) / (2*a)
         if (abs(t) > abs(t2)):
             t = t2
         
-        # Move p1 to place and time of collision
+        # Return p1 to place and time of collision
         p1.P += t * p1.V
 
-        #find the unit vector components between the two particles' centers to treat the collision as one-dimensional
-        vx = p1.x - p2.x
-        vy = p1.y - p2.y
-        vz = p1.z - p2.z
-        vxyznorm = (vx**2+vy**2+vz**2)**0.5
-        vxn = vx/vxyznorm
-        vyn = vy/vxyznorm
-        vzn = vz/vxyznorm
+        # Find the unit vector components between the two particles' centers to treat the collision as one-dimensional.
+        V = p1.P - p2.P
+        norm = np.sqrt(np.sum(np.power(V, 2)))
+        Vnorm = V/norm
 
-        #treat the particles as one particle and calculate the center of mass velocity
+        # Treat the particles as one particle and calculate the center of mass velocity.
         totmass = p1.m + p2.m
-        comdx = (p1.m*p1.dx + p2.m*p2.dx)/totmass
-        comdy = (p1.m*p1.dy + p2.m*p2.dy)/totmass
-        comdz = (p1.m*p1.dz + p2.m*p2.dz)/totmass
+        COMV = (p1.m * p1.V + p2.m * p2.V) / totmass
 
-        #find momentum transferred to p1
-        pn = (p1.dx - comdx)*vxn + (p1.dy - comdy)*vyn + (p1.dz - comdz)*vzn
-        px = 2*vxn*pn
-        py = 2*vyn*pn
-        pz = 2*vzn*pn
+        # Find momentum transferred to p1.
+        pn = np.multiply(Vnorm, p1.V-COMV)
+        P = 2 * Vnorm * pn
 
-        #transfer momentum to p1
-        p1.dx -= px
-        p1.dy -= py
-        p1.dz -= pz
+        # Transfer momentum to p1.
+        p1.V -= P
 
-        #remove momentum from p2
+        # Remove momentum from p2.
         massratio = p1.m/p2.m
-        p2.dx += px*massratio
-        p2.dy += py*massratio
-        p2.dz += pz*massratio
+        p2.V += P * massratio
         
     def thermometer(self) -> float:
         """Calculate the temperature of the gas based on the Maxwell Boltzmann distribution.

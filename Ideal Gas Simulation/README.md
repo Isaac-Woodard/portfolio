@@ -25,3 +25,11 @@ Want to refactor the program:
 - Try to speed up execution with numba
 - Create a script to build a standalone executeable with pyinstaller
 - Add unit tests
+- Draft documentation for physics!
+ - 3d Pythagorean theorem...
+ - Back-track collision kinematics...
+- Outline pros and cons for collision checking:
+ - Can miss collisions if particle speed is greater than grid size or particle size.
+ - Checking across theoretical path for time step would be more robust, but also more expensive.
+  - Line segment in constant velocity case. Potentially an arc with acceleration.
+ - Why back-track instead of checking for collision ahead of time?
