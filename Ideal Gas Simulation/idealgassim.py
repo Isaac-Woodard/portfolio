@@ -1,21 +1,22 @@
 import random
+from dataclasses import dataclass
 
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
-
+    
+@dataclass
 class Particle:
-    def __init__(self, x:float, y:float, z:float, dx:float, dy:float, dz:float, m:int, r:int) -> None:
-        self.P = np.ndarray((x, y, z))
-        self.V = np.ndarray((dx, dy, dz))
-        self.m = m
-        self.r = r
-        self.canvasID = None
-        self.tagged = None
+    P: np.ndarray = np.zeros(3)
+    V: np.ndarray = np.zeros(3)
+    m: float
+    r: float
+    canvasID = None #TODO: Still useful after refactor?
+    tagged = None #TODO: Still useful after refactor?
         
     @property
     def speed(self):
-        return (self.V[0]**2+self.V[1]**2+self.V[2]**2)**0.5
+        return np.sum(np.power(self.V, 2))**0.5
     
     @property
     def KE(self):
@@ -67,7 +68,7 @@ class IdealGasSim():
         self._vbin_width = vbin_width
         self._vbin_range = vbin_range
         
-        self.particles = [] #TODO: Add particles in constructor.
+        self.particles = [] #TODO: Add some starting particles?
         self._grid_size = grid_size
         n = int(sim_size / grid_size + 1)
         self.partition = [[[] for _ in range(n)] for _ in range(n)]
@@ -93,7 +94,10 @@ class IdealGasSim():
                         break
                 else:
                     overlap = False 
-            p = Particle(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, m=self._mass, r=self._radius)
+                    
+            p = Particle(P=np.ndarray((x, y, z)), 
+                         V=np.ndarray((dx, dy, dz)),
+                         m=self._mass, r=self._radius)    
             nx = int(p.P[0] / self._grid_size)
             ny = int(p.P[1] / self._grid_size)
             self.partition[nx][ny].append(p)
@@ -111,14 +115,15 @@ class IdealGasSim():
     #TODO: Refactor
     def time_step(self, n:int=1) -> None:
         """Advances the simulation n time-steps.
+        #TODO Describe the units for the time-steps.
 
         Args:
-            n (int, optional): number of time steps. Defaults to 1.
+            n (int, optional): Number of time steps. Defaults to 1.
         """
         if unpaused is True:
             #clears the grid
-            global grid
-            grid = [[[] for _ in range(height)] for _ in range(length)]
+            i = int(self._sim_size / self._grid_size + 1)
+            self.partition = [[[] for _ in range(n)] for _ in range(n)]
             #update each particle position and the grid
             dt = simSpeed.get() / 50 #parameter to adjust simulation speed
             for p in particleList:
@@ -136,9 +141,8 @@ class IdealGasSim():
                     p2 = checkParticleCollision(p) #store the colliding particle
                     if p2 != p:
                         particleCollision(p, p2)
-            drawParticles()
-        simulationCanvas.update()
         
+        #TODO: This should probably be its own function.
         #code to automate bin counts
         global binTimes
         binNum = 0
@@ -149,7 +153,7 @@ class IdealGasSim():
             high = i+binRange
             #step through particles and find speeds
             for p in particleList:
-                speed = mPerPixel * (p.v[0]**2 + p.v[1]**2 +p.v[2]**2)**0.5 #normalizing factor: 200 meters per pixel #3D Edit Marker
+                speed = mPerPixel * (p.v[0]**2 + p.v[1]**2 +p.v[2]**2)**0.5 #normalizing factor: 200 meters per pixel
                 if speed >= low and speed <= high:
                     count += 1
             binCounts[binNum] = (binCounts[binNum]*binTimes+count)/(binTimes+1)
@@ -296,3 +300,7 @@ class IdealGasSim():
         KEmean = KEtotal / len(self.particles)
         temp = KEmean / 1.38e-23 / 1.5
         return temp
+    
+    #TODO: Plot current sim state.
+    def plot(self, figure:plt.Figure=None) -> None:
+        ...
