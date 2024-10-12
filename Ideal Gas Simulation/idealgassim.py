@@ -11,8 +11,6 @@ class Particle:
     V: np.ndarray = np.zeros(3)
     m: float
     r: float
-    canvasID = None #TODO: Still useful after refactor?
-    tagged = None #TODO: Still useful after refactor?
         
     @property
     def speed(self):
@@ -61,14 +59,14 @@ class IdealGasSim():
         self._radius = radius
         self._external_temp = external_temp
         
-        self._sim_depth = radius*6 # Depth in pixels of simulation.
+        self._sim_depth = radius * 6 # Depth in pixels of simulation.
         self._vmax = vmax
         self._vz_max = vmax # Maximum starting depth velocity.
         self._m_per_pix = m_per_pix
         self._vbin_width = vbin_width
         self._vbin_range = vbin_range
         
-        self.particles = [] #TODO: Add some starting particles?
+        self.particles = []
         self._grid_size = grid_size
         n = int(sim_size / grid_size + 1)
         self.partition = [[[] for _ in range(n)] for _ in range(n)]
@@ -89,7 +87,9 @@ class IdealGasSim():
                 y = random.randint(1+p.r, self._sim_size-p.r)
                 z = random.randint(1+p.r, self._sim_depth-p.r)
                 for p in self.particles:
-                    if x >= p.p[0]-2*p.r and x <= p.p[0]+2*p.r and y >= p.p[1]-2*p.r and y <= p.p[1]+2*p.r and z >= p.p[2]-2*p.r and z <= p.p[2]+2*p.r:
+                    if (x >= p.p[0]-2*p.r and x <= p.p[0]+2*p.r and 
+                        y >= p.p[1]-2*p.r and y <= p.p[1]+2*p.r and 
+                        z >= p.p[2]-2*p.r and z <= p.p[2]+2*p.r):
                         overlap = True
                         break
                 else:
@@ -112,53 +112,49 @@ class IdealGasSim():
         for _ in range(n):
             self.particles.pop()
         
-    #TODO: Refactor
-    def time_step(self, n:int=1) -> None:
+    def time_step(self, n:int=1, dt:float=1) -> None:
         """Advances the simulation n time-steps.
-        #TODO Describe the units for the time-steps.
 
         Args:
             n (int, optional): Number of time steps. Defaults to 1.
+            dt (float, optional): Number of seconds between time steps. Defaults to 1.
         """
-        if unpaused is True:
-            #clears the grid
-            i = int(self._sim_size / self._grid_size + 1)
-            self.partition = [[[] for _ in range(n)] for _ in range(n)]
-            #update each particle position and the grid
-            dt = simSpeed.get() / 50 #parameter to adjust simulation speed
-            for p in particleList:
-                p.p[0] = p.p[0] + p.v[0] * dt
-                p.p[1] = p.p[1] + p.v[1] * dt
-                p.p[2] = p.p[2] + p.v[2] * dt #3D Edit Marker
-                gridx = int(p.p[0] / gridLength)
-                gridy = int(p.p[1] / gridHeight)
-                grid[gridx][gridy].append(p)
-            #check for collisions with wall and particles and update trajectories if necessary
-            for p in particleList:
-                if checkWallCollision(p):
-                    wallCollision(p)
-                else:
-                    p2 = checkParticleCollision(p) #store the colliding particle
-                    if p2 != p:
-                        particleCollision(p, p2)
+        # Clear the grid.
+        i = int(self._sim_size / self._grid_size + 1)
+        self.partition = [[[] for _ in range(n)] for _ in range(n)]
         
-        #TODO: This should probably be its own function.
-        #code to automate bin counts
-        global binTimes
-        binNum = 0
-        for i in range(0, maxRange, binRange):
-            count = 0
-            #get high and low speed values from text fields
-            low = i
-            high = i+binRange
-            #step through particles and find speeds
-            for p in particleList:
-                speed = mPerPixel * (p.v[0]**2 + p.v[1]**2 +p.v[2]**2)**0.5 #normalizing factor: 200 meters per pixel
-                if speed >= low and speed <= high:
-                    count += 1
-            binCounts[binNum] = (binCounts[binNum]*binTimes+count)/(binTimes+1)
-            binNum += 1
-        binTimes += 1
+        # Update particle positions.
+        for p in self.particles:
+            p.P = p.P + p.V * dt
+            nx = int(p.P[0] / self._grid_size)
+            ny = int(p.P[1] / self._grid_size)
+            self.partition[nx][ny].append(p)
+            
+        # Check for collisions.
+        for p in self.particles:
+            if self.check_wall_collision(p):
+                self.wall_collision(p)
+            else:
+                p2 = self.check_particle_collision(p)
+                if p2:
+                    self.particle_collision(p, p2)
+        
+    def speed_bin(self, min_speed:float, max_speed:float) -> int:
+        """Return the number of particles within a speed range.
+
+        Args:
+            min_speed (float): The minimum speed, inclusive.
+            max_speed (float): The maximum speed, exclusive.
+
+        Returns:
+            int: The number of particles.
+        """
+        count = 0
+        for p in self.particles:
+            speed = self._m_per_pix * (p.V[0]**2 + p.V[1]**2 +p.V[2]**2)**0.5
+            if speed >= min_speed and speed < max_speed:
+                count += 1
+        return count
         
     #TODO: Return which wall the collision is with. Use info for wall_collision() call.
     def check_wall_collision(self, p:Particle) -> bool:
@@ -179,6 +175,7 @@ class IdealGasSim():
         else:
             return False
         
+    #TODO Vectorize. Use vector output from check_wall_collision instead of repeating check?
     def wall_collision(self, p:Particle) -> None:
         """Updates particle velocity in case of a wall collision.
 
@@ -207,9 +204,8 @@ class IdealGasSim():
                 p.P[2] = self._sim_depth - 2 - p.r
             
         # Simulate heating or cooling the particle to meet target temperature.
-        k = 1000
-        if temperature != self._external_temp: #NOTE: Might be more efficient to skip the check.
-            p.V = p.V + (self._external_temp - temperature) / k * p.V
+        k = 1000 # Arbitrary constant.
+        p.V = p.V + (self._external_temp - self.thermometer() ) * p.V / k 
         
     def check_particle_collision(self, p:Particle) -> Particle:
         """Checks for particle collisions. Search is confined to neighboring partitions.
@@ -221,14 +217,14 @@ class IdealGasSim():
         Returns:
             Particle: The colliding particle if found, otherwise None.
         """
-        gridx = int(p.P[0] / self._grid_size)
-        gridy = int(p.P[1] / self._grid_size)
+        nx = int(p.P[0] / self._grid_size)
+        ny = int(p.P[1] / self._grid_size)
         # Step through adjacent grid spaces as well.
         for i in (-1,0,1):
             for j in (-1,0,1):
-                if gridx+i < 0 or gridy+j < 0 or gridx+i >= self._sim_size or gridy+j >= self._sim_size:
+                if nx+i < 0 or ny+j < 0 or nx+i >= self._sim_size or ny+j >= self._sim_size:
                     continue
-                for p2 in grid[gridx+i][gridy+j]:
+                for p2 in self.partition[nx+i][ny+j]:
                     if p is p2:
                         continue
                     dmin = p.r + p2.r
