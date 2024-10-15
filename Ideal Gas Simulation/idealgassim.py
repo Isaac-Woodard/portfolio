@@ -39,7 +39,8 @@ class IdealGasSim():
                  vbin_width:float=200,
                  vbin_range:float=3000,
                  grid_size:int=50) -> None:
-        """Creates a 3D ideal gas in a box. The gas is modeled as a group of discrete particles obeying classical mechanics.
+        """Creates a 3D ideal gas in a box. The gas is modeled as a group of 
+        discrete particles obeying classical mechanics.
 
         Args:
             sim_size (int): Width and height in pixels of the simulation frame.
@@ -53,15 +54,14 @@ class IdealGasSim():
             vbin_range (float): Range for velocity binning.
             grid_size (int): Pixel length of particle list partitions.
         """
-        self._sim_size = sim_size
+        self._sim_size = (sim_size, sim_size, radius*6) # X Y Z
         self._nparticles = nparticles
         self._mass = mass
         self._radius = radius
         self._external_temp = external_temp
         
-        self._sim_depth = radius * 6 # Depth in pixels of simulation.
         self._vmax = vmax
-        self._vz_max = vmax # Maximum starting depth velocity.
+        self._vz_max = vmax # Maximum starting depth velocity. #TODO Combine with vmax in a vector
         self._m_per_pix = m_per_pix
         self._vbin_width = vbin_width
         self._vbin_range = vbin_range
@@ -78,15 +78,18 @@ class IdealGasSim():
             n (int): Number of particles to add.
         """
         for _ in range(n):
+            #TODO: Try to vectorize
             dx = random.uniform(-self._vmax, self._vmax)
             dy = random.uniform(-self._vmax, self._vmax)
             dz = random.uniform(-self._vmax, self._vmax)
             overlap = True
             while overlap: # Check for overlap with existing particles.
-                x = random.randint(1+p.r, self._sim_size-p.r)
-                y = random.randint(1+p.r, self._sim_size-p.r)
-                z = random.randint(1+p.r, self._sim_depth-p.r)
+                #TODO: Try to vectorize
+                x = random.randint(1+p.r, self._sim_size[0]-p.r) #TODO: Fix reference to p...no particles in scope yet!
+                y = random.randint(1+p.r, self._sim_size[1]-p.r)
+                z = random.randint(1+p.r, self._sim_size[2]-p.r)
                 for p in self.particles:
+                    #TODO: Try to vectorize
                     if (x >= p.p[0]-2*p.r and x <= p.p[0]+2*p.r and 
                         y >= p.p[1]-2*p.r and y <= p.p[1]+2*p.r and 
                         z >= p.p[2]-2*p.r and z <= p.p[2]+2*p.r):
@@ -120,8 +123,8 @@ class IdealGasSim():
             dt (float, optional): Number of seconds between time steps. Defaults to 1.
         """
         # Clear the grid.
-        i = int(self._sim_size / self._grid_size + 1)
-        self.partition = [[[] for _ in range(n)] for _ in range(n)]
+        i = int(self._sim_size[0] / self._grid_size + 1)
+        self.partition = [[[] for _ in range(i)] for _ in range(i)]
         
         # Update particle positions.
         for p in self.particles:
@@ -156,52 +159,37 @@ class IdealGasSim():
                 count += 1
         return count
         
-    #TODO: Return which wall the collision is with. Use info for wall_collision() call.
-    def check_wall_collision(self, p:Particle) -> bool:
+    def check_wall_collision(self, p:Particle) -> np.ndarray:
         """Checks the particle for wall collisions.
 
         Args:
             p (Particle): The particle to check.
 
         Returns:
-            Bool: Whether there is a wall collision.
+            ndarray: Whether there is a wall collision along the X, Y, and Z axes.
         """
-        if p.P[0]-p.r < 1 or p.P[0]+p.r > self._sim_size:
-            return True
-        if p.P[1]-p.r < 1 or p.P[1]+p.r > self._sim_size:
-            return True
-        if p.P[2]-p.r < 1 or p.P[2]+p.r > self._sim_depth:
-            return True
-        else:
-            return False
+        return p.P-p.r < 1 | p.P+p.r > self._sim_size
         
-    #TODO Vectorize. Use vector output from check_wall_collision instead of repeating check?
-    def wall_collision(self, p:Particle) -> None:
+    def wall_collision(self, p:Particle, checks:np.ndarray) -> None:
         """Updates particle velocity in case of a wall collision.
+        
+        NOTE: Technically, the particle postion isn't backed up the 
+        way it is in a particle collision, so it will effecticely 
+        pass the wall before bouncing.
 
         Args:
             p (Particle): The particle to update.
+            checks (ndarray): An array indicating whether there was a wall collision along the X, Y, and Z axes.
         """
         # Bounce the particle.
-        if p.P[0]-p.r < 1 or p.P[0]+p.r > self._sim_size: 
-            p.V[0] = -p.V[0]
+        i = np.where(checks == 1)
+        if checks[i]: 
+            p.V[i] = -p.V[i]
             # Make sure the particle isn't pushed behind the wall.
-            if p.P[0]-p.r < 1:
-                p.P[0] = p.r + 1
-            if p.P[0]+p.r > self._sim_size:
-                p.P[0] = self._sim_size - 2 - p.r
-        if p.P[1]-p.r < 1 or p.P[1]+p.r > self._sim_size:
-            p.V[1] = -p.V[1]
-            if p.P[1]-p.r < 1:
-                p.P[1] = p.r + 1
-            if p.P[1]+p.r > self._sim_size:
-                p.P[1] = self._sim_size - 2 - p.r
-        if p.P[2]-p.r < 1 or p.P[2]+p.r > self._sim_depth:
-            p.V[2] = -p.V[2]
-            if p.P[2]-p.r < 1:
-                p.P[2] = p.r + 1
-            if p.P[2]+p.r > self._sim_depth:
-                p.P[2] = self._sim_depth - 2 - p.r
+            if p.P[i]-p.r < 1:
+                p.P[i] = p.r + 1
+            if p.P[i]+p.r > self._sim_size[i]:
+                p.P[i] = self._sim_size[i] - 2 - p.r
             
         # Simulate heating or cooling the particle to meet target temperature.
         k = 1000 # Arbitrary constant.
@@ -222,7 +210,7 @@ class IdealGasSim():
         # Step through adjacent grid spaces as well.
         for i in (-1,0,1):
             for j in (-1,0,1):
-                if nx+i < 0 or ny+j < 0 or nx+i >= self._sim_size or ny+j >= self._sim_size:
+                if nx+i < 0 or ny+j < 0 or nx+i >= self._sim_size[0] or ny+j >= self._sim_size[0]:
                     continue
                 for p2 in self.partition[nx+i][ny+j]:
                     if p is p2:
