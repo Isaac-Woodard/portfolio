@@ -2,7 +2,7 @@ import sys
 
 from PyQt6 import QtWidgets, uic, QtCore
 
-import idealgassim as gas
+import idealgas as gas
 
 class IdealGasGUI(QtWidgets.QMainWindow):
     """Defines a GUI for the ideal gas simulation."""

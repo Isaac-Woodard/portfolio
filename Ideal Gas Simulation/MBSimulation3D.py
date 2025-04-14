@@ -1,18 +1,19 @@
-'''
+"""
+#TODO: Obsolete this script with separate gui and simulation modules.
+
 Created on Dec 14, 2018
 Last Updated: Aug 26, 2019
 @author: Isaac Woodard
-'''
+
+#NOTE: There is a bug that crashes the program if the particles move too fast. Currently, this is avoided by limiting the temperature to 500 K.
+#NOTE: The simulation seems to run faster for lower particle counts.
+"""
 
 from tkinter import *
 from tkinter import ttk
 import random
 import matplotlib.pyplot as plt
 import numpy as np
-
-#Notes: There is a bug that crashes the program if the particles move too fast. Currently, this is avoided by limiting the temperature to 500 K.
-#Notes: The simulation seems to run faster for lower particle counts.
-
 
 #########################
 #Adjustable Parameters
